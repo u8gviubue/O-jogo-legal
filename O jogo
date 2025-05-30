@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <title>O Jogo Legal</title>
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#2c3e50" />
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            padding: 50px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        .word {
+            font-size: 32px;
+            font-weight: bold;
+            margin: 30px 0;
+        }
+        input, button {
+            padding: 10px;
+            font-size: 18px;
+            margin-top: 10px;
+        }
+        .score, .timer {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+        .score { color: #27ae60; }
+        .timer { color: #e74c3c; }
+    </style>
+    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABgElEQVRYR+2WsU4CQRCFv7VSgghEIhE0QoSzoMJMqQw0RGCJpEYaP0HugyiQJeJNz0AwTwOd8PqB3gv5iB0fu5fzdgFYwD3LkFNYGAWAWAFZAYAFYDBrL5kpSnACkAdzEbMzwN5V4vtlYqWpqkCV2vgVwAt6jDnKBqAKpjQWCsB5gZ/wqAwH4DmHtA7kNvm4u85iofDoGf0sHkcf6eCkIqgXsJlN9wByHZ3yHK1FcBf06XXvgS4A6QAxk6UWWBwgXk4ROUXQLk+8FwAq0CZcHuk6PSJIIQQpj6k6vVYMiigKAjoIqAC4gkl6u61Wu8NiL3XQTRkGsg+2u6222plE5cvAIFBRKcF0wxcRyGWEM9zHrBaS5GMw5PLjKoTMeZGKq8XjdZlOXz2RsmSo9FIpc2tBkhKSNqKjF3z7bT3ah4BPGXSkX1X96wAAAABJRU5ErkJggg==" />
+</head>
+<body>
+    <h1>O Jogo Legal</h1>
+    <p class="word" id="scrambled-word">Carregando...</p>
+    <input type="text" id="guess" placeholder="Digite a palavra correta" />
+    <br />
+    <button onclick="checkGuess()">Enviar</button>
+    <button onclick="newWord()">Nova Palavra</button>
+    <p class="timer" id="timer">Tempo restante: 60s</p>
+    <p class="score" id="feedback"></p>
+    <p class="score" id="score">Pontuação: 0</p>
+
+    <script>
+        const wordsByLevel = {
+            1: ["paz", "sol", "cão", "rio"],
+            2: ["livro", "tempo", "praia", "chave"],
+            3: ["amizade", "coragem", "natureza", "felicidade"]
+        };
+
+        let currentWord = "";
+        let scrambled = "";
+        let score = 0;
+        let timer = 60;
+        let interval;
+        let level = 1;
+
+        if (localStorage.getItem("score")) {
+            score = parseInt(localStorage.getItem("score"));
+            document.getElementById("score").textContent = "Pontuação: " + score;
+        }
+
+        function shuffle(word) {
+            return word.split('').sort(() => Math.random() - 0.5).join('');
+        }
+
+        function newWord() {
+            clearInterval(interval);
+            timer = 60;
+            updateTimer();
+
+            if (score >= 50) level = 3;
+            else if (score >= 20) level = 2;
+
+            const words = wordsByLevel[level];
+            currentWord = words[Math.floor(Math.random() * words.length)];
+            scrambled = shuffle(currentWord);
+            while (scrambled === currentWord) {
+                scrambled = shuffle(currentWord);
+            }
+
+            document.getElementById("scrambled-word").textContent = scrambled;
+            document.getElementById("guess").value = "";
+            document.getElementById("feedback").textContent = "";
+
+            interval = setInterval(() => {
+                timer--;
+                updateTimer();
+                if (timer <= 0) {
+                    clearInterval(interval);
+                    document.getElementById("feedback").textContent = "Tempo esgotado! 😞 A palavra era: " + currentWord;
+                    setTimeout(newWord, 2000);
+                }
+            }, 1000);
+        }
+
+        function updateTimer() {
+            document.getElementById("timer").textContent = "Tempo restante: " + timer + "s";
+        }
+
+        function checkGuess() {
+            const guess = document.getElementById("guess").value.toLowerCase();
+            if (guess === currentWord) {
+                clearInterval(interval);
+                score += 10;
+                localStorage.setItem("score", score);
+                document.getElementById("feedback").textContent = "Correto! 🎉";
+                document.getElementById("score").textContent = "Pontuação: " + score;
+                setTimeout(newWord, 1000);
+            } else {
+                document.getElementById("feedback").textContent = "Tente novamente 😅";
+            }
+        }
+
+        newWord();
+    </script>
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js').then(registration => {
+            console.log('Service Worker registrado com sucesso:', registration.scope);
+          }).catch(err => {
+            console.log('Falha ao registrar Service Worker:', err);
+          });
+        });
+      }
+    </script>
+</body>
+</html>
